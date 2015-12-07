@@ -22,6 +22,7 @@ Consumer::~Consumer() {
 }
 
 void Consumer::pop(BatchType& result, size_t cnt) {
+    std::cout << "pop cnt: " <<  cnt <<  endl;
     result.reserve(cnt);
     bool shouldRotate = false;
 
@@ -35,8 +36,12 @@ void Consumer::pop(BatchType& result, size_t cnt) {
 
         if (rc == 0) {
             uint64_t offset = 0;
+            std::cout << "head: " <<  head <<  std::endl;
+            std::cout << "byte: " <<  byte <<  std::endl;
+
             for (; rc == 0 && cnt > 0; --cnt) {
                 offset = _cursor->key<uint64_t>();
+                std::cout << "offset: " << offset << std::endl;
                 const char* data = (const char*)_cursor->val().mv_data;
                 size_t len = _cursor->val().mv_size;
                 result.push_back(ItemType(offset, data, len));
