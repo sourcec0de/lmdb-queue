@@ -35,6 +35,7 @@ void Consumer::pop(BatchType& result, size_t cnt) {
 
         std::cout << "head: " <<  head <<  std::endl;
         std::cout << "byte: " <<  byte <<  std::endl;
+        std::cout << "rc: " << rc << std::endl;
 
         if (rc == 0) {
             uint64_t offset = 0;
