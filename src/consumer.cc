@@ -57,6 +57,7 @@ void Consumer::pop(BatchType& result, size_t cnt) {
         } else {
             if (rc != MDB_NOTFOUND) cout << "Consumer seek error: " << mdb_strerror(rc) << endl;
 
+            std::cout << "getProducerHead(txn): " <<  _topic->getProducerHead(txn) << std::endl;
             if (head < _topic->getProducerHead(txn)) {
                 shouldRotate = true;
             }

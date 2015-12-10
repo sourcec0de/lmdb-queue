@@ -2053,7 +2053,7 @@ mdb_page_alloc(MDB_cursor *mc, int num, MDB_page **mp)
 			if (oldest <= last)
 				break;
 		}
-		rc = mdb_cursor_get(&m2, &key, NULL, op);
+        rc = mdb_cursor_get(&m4, &key, NULL, op);
 		if (rc) {
 			if (rc == MDB_NOTFOUND)
 				break;
