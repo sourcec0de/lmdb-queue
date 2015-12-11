@@ -29,6 +29,7 @@ void Consumer::pop(BatchType& result, size_t cnt) {
         Txn txn(_topic->getEnv(), NULL);
         mdb_txn_renew(_rtxn);
 
+        std::cout << "name: " << _name << std::endl;
         uint64_t head = _topic->getConsumerHead(txn, _name);
         uint64_t byte = _topic->getConsumerByte(txn, _name);
         int rc = _cursor->gte(head);
@@ -65,13 +66,16 @@ void Consumer::pop(BatchType& result, size_t cnt) {
     }
 
     if (shouldRotate) {
+        std::cout << "rotate" << std::endl;
         rotate();
         pop(result, cnt);
     }
 }
 
 void Consumer::openHead(Txn* txn) {
+    std::cout << "before: " << _current << std::endl;
     _current = _topic->getConsumerHeadFile(*txn, _name, _current);
+    std::cout << "after: " << _current << std::endl;
 
     char path[4096];
     _topic->getChunkFilePath(path, _current);
