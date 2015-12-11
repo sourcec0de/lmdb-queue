@@ -5695,7 +5695,7 @@ mdb_cursor_set(MDB_cursor *mc, MDB_val *key, MDB_val *data,
 			/* If any parents have right-sibs, search.
 			 * Otherwise, there's nothing further.
 			 */
-            eor (i=0; i<mc->mc_top; i++)
+			for (i=0; i<mc->mc_top; i++)
 				if (mc->mc_ki[i] <
 					NUMKEYS(mc->mc_pg[i])-1)
 					break;

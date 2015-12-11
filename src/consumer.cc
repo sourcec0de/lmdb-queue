@@ -27,9 +27,7 @@ void Consumer::pop(BatchType& result, size_t cnt) {
 
     {
         Txn txn(_topic->getEnv(), NULL);
-        int ret = mdb_txn_renew(_rtxn);
 
-        std::cout << "renew: " << std::endl;
         std::cout << "name: " << _name << std::endl;
         uint64_t head = _topic->getConsumerHead(txn, _name);
         uint64_t byte = _topic->getConsumerByte(txn, _name);
@@ -104,6 +102,8 @@ void Consumer::openHead(Txn* txn) {
     mdb_txn_begin(_env, NULL, MDB_RDONLY, &_rtxn);
     _cursor = new MDBCursor(_db, _rtxn);
     mdb_txn_reset(_rtxn);
+    int ret = mdb_txn_renew(_rtxn);
+    std::cout << "renew: " << std::
 }
 
 void Consumer::closeCurrent() {
