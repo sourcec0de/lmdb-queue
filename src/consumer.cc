@@ -30,6 +30,10 @@ void Consumer::pop(BatchType& result, size_t cnt) {
         mdb_txn_renew(_rtxn);
 
         uint64_t head = _topic->getConsumerHead(txn, _name);
+
+        if (head - _topic->getProducerHead(txn) == 1)
+            return;
+
         int rc = _cursor->gte(head);
 
         if (rc == 0) {
