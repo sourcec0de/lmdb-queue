@@ -26,7 +26,7 @@ int descCmp(const MDB_val *a, const MDB_val *b) {
 
 Topic::Topic(Env* env, const string& name) : _env(env), _name(name) {
     Txn txn(env, NULL);
-    int rc = mdb_dbi_open(txn.getonvTxn(), name.c_str(), MDB_CREATE, &_desc);
+    int rc = mdb_dbi_open(txn.getEnvTxn(), name.c_str(), MDB_CREATE, &_desc);
     if (rc != 0) {
         printf("Topic open error.\n%s\n", mdb_strerror(rc));
         return;
