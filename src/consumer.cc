@@ -27,7 +27,6 @@ void Consumer::pop(BatchType& result, size_t cnt) {
 
     {
         Txn txn(_topic->getEnv(), NULL);
-        mdb_txn_renew(_rtxn);
 
         uint64_t phead = _topic->getProducerHead(txn);
         uint64_t head = _topic->getConsumerHead(txn, _name);
@@ -37,18 +36,25 @@ void Consumer::pop(BatchType& result, size_t cnt) {
 
         int rc = _cursor->gte(head);
 
+        std::cout << "head: " <<  head <<  std::endl;
+        std::cout << "byte: " <<  byte <<  std::endl;
+        std::cout << "rc: " << rc << std::endl;
+
         if (rc == 0) {
             uint64_t offset = 0;
+
             for (; rc == 0 && cnt > 0; --cnt) {
                 offset = _cursor->key<uint64_t>();
+                std::cout << "offset: " << offset << std::endl;
                 const char* data = (const char*)_cursor->val().mv_data;
                 size_t len = _cursor->val().mv_size;
                 result.push_back(ItemType(offset, data, len));
+                byte += len;
                 rc = _cursor->next();
             }
 
             if (offset > 0) {
-                _topic->setConsumerHead(txn, _name, offset + 1);
+                _topic->setConsumerHead(txn, _name, offset + 1, byte);
                 txn.commit();
             }
         } else {
@@ -61,13 +67,16 @@ void Consumer::pop(BatchType& result, size_t cnt) {
     }
 
     if (shouldRotate) {
+        std::cout << "rotate" << std::endl;
         rotate();
         pop(result, cnt);
     }
 }
 
 void Consumer::openHead(Txn* txn) {
+    std::cout << "before: " << _current << std::endl;
     _current = _topic->getConsumerHeadFile(*txn, _name, _current);
+    std::cout << "after: " << _current << std::endl;
 
     char path[4096];
     _topic->getChunkFilePath(path, _current);
@@ -95,6 +104,8 @@ void Consumer::openHead(Txn* txn) {
     mdb_txn_begin(_env, NULL, MDB_RDONLY, &_rtxn);
     _cursor = new MDBCursor(_db, _rtxn);
     mdb_txn_reset(_rtxn);
+    int ret = mdb_txn_renew(_rtxn);
+    std::cout << "renew: " << std::
 }
 
 void Consumer::closeCurrent() {

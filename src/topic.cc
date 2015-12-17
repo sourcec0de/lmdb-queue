@@ -15,18 +15,18 @@ int descCmp(const MDB_val *a, const MDB_val *b) {
 
     switch (a->mv_size)
     {
-    case sizeof(uint32_t) :
-        return mdbIntCmp<uint32_t>(a, b);
-    case sizeof(uint64_t) :
-        return mdbIntCmp<uint64_t>(a, b);
-    default:
-        return memcmp(a->mv_data, b->mv_data, a->mv_size);
+        case sizeof(uint32_t) :
+            return mdbIntCmp<uint32_t>(a, b);
+        case sizeof(uint64_t) :
+            return mdbIntCmp<uint64_t>(a, b);
+        default:
+            return memcmp(a->mv_data, b->mv_data, a->mv_size);
     }
 }
 
 Topic::Topic(Env* env, const string& name) : _env(env), _name(name) {
     Txn txn(env, NULL);
-    int rc = mdb_dbi_open(txn.getEnvTxn(), name.c_str(), MDB_CREATE, &_desc);
+    int rc = mdb_dbi_open(txn.getonvTxn(), name.c_str(), MDB_CREATE, &_desc);
     if (rc != 0) {
         printf("Topic open error.\n%s\n", mdb_strerror(rc));
         return;
@@ -76,8 +76,8 @@ TopicStatus Topic::status() {
         const char* namePtr = ((const char*)cur.key().mv_data) + strlen(prefixConsumerStr);
         strncpy(name, namePtr, nameLen);
         name[nameLen] = 0;
+        ret.consumerHeads[name] = *(ConsumeInfo*)(cur.val().mv_data);
 
-        ret.consumerHeads[name] = cur.val<uint64_t>();
         rc = cur.next();
     }
 
@@ -94,22 +94,22 @@ void Topic::setProducerHeadFile(Txn& txn, uint32_t file, uint64_t offset) {
     MDB_val key{ sizeof(file), &file},
             val{ sizeof(offset), &offset };
 
-    mdb_put(txn.getEnvTxn(), _desc, &key, &val, 0);
+            mdb_put(txn.getEnvTxn(), _desc, &key, &val, 0);
 }
 
 uint64_t Topic::getProducerHead(Txn& txn) {
     MDB_val key{ strlen(keyProducerStr), (void*)keyProducerStr },
             val{ 0, 0 };
 
-    mdb_get(txn.getEnvTxn(), _desc, &key, &val);
-    return *(uint64_t*)val.mv_data;
+            mdb_get(txn.getEnvTxn(), _desc, &key, &val);
+            return *(uint64_t*)val.mv_data;
 }
 
 void Topic::setProducerHead(Txn& txn, uint64_t head) {
     MDB_val key{ strlen(keyProducerStr), (void*)keyProducerStr },
             val{ sizeof(head), &head };
 
-    mdb_put(txn.getEnvTxn(), _desc, &key, &val, 0);
+            mdb_put(txn.getEnvTxn(), _desc, &key, &val, 0);
 }
 
 uint32_t Topic::getConsumerHeadFile(Txn& txn, const std::string& name, uint32_t searchFrom) {
@@ -141,10 +141,13 @@ uint64_t Topic::getConsumerHead(Txn& txn, const std::string& name) {
 
     MDB_val key{ strlen(keyStr), keyStr }, val{ 0, nullptr };
     int rc = mdb_get(txn.getEnvTxn(), _desc, &key, &val);
+
     if (rc == 0) {
         return *(uint64_t*)val.mv_data;
     } else {
         if (rc != MDB_NOTFOUND) cout << "Consumer seek error: " << mdb_strerror(rc) << endl;
+
+        std::cout << "Get Consumer Head Err: " << rc << std::endl;
 
         MDBCursor cur(_desc, txn.getEnvTxn());
         cur.gte(uint32_t(0));
@@ -152,14 +155,35 @@ uint64_t Topic::getConsumerHead(Txn& txn, const std::string& name) {
     }
 }
 
-void Topic::setConsumerHead(Txn& txn, const std::string& name, uint64_t head) {
+uint64_t Topic::getConsumerByte(Txn& txn, const std::string& name) {
     char keyStr[4096];
     sprintf(keyStr, keyConsumerStr, name.c_str());
 
-    MDB_val key{ strlen(keyStr), keyStr },
-            val{ sizeof(head), &head };
+    MDB_val key{ strlen(keyStr), keyStr }, val{ 0, nullptr };
+    int rc = mdb_get(txn.getEnvTxn(), _desc, &key, &val);
+    if (rc == 0) {
+        return ((ConsumeInfo*)val.mv_data)->byte;
+    } else {
+        if (rc != MDB_NOTFOUND) cout << "Consumer seek error: " << mdb_strerror(rc) << endl;
 
-    mdb_put(txn.getEnvTxn(), _desc, &key, &val, 0);
+        MDBCursor cur(_desc, txn.getEnvTxn());
+        cur.gte(uint32_t(0));
+        if (cur.val<uint64_t>() == 0)
+            return 0;
+        else
+            return ((ConsumeInfo*)val.mv_data)->byte;
+    }
+}
+
+void Topic::setConsumerHead(Txn& txn, const std::string& name, uint64_t head, uint64_t byte) {
+    char keyStr[4096];
+    sprintf(keyStr, keyConsumerStr, name.c_str());
+
+    ConsumeInfo info = { head, byte };
+    MDB_val key{ strlen(keyStr), keyStr },
+            val{ sizeof(info), &info };
+
+            mdb_put(txn.getEnvTxn(), _desc, &key, &val, 0);
 }
 
 int Topic::getChunkFilePath(char* buf, uint32_t chunkSeq) {
