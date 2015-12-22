@@ -3,7 +3,7 @@
 
 using namespace std;
 
-Consumer::Consumer(const std::string& root, const std::string& topic, const std::string& name, TopicOpt* opt) : _topic(EnvManager::getEnv(root)->getTopic(topic)), _name(name), _current(0), _lastOffset(0), _env(nullptr), _db(0), _rtxn(nullptr), _cursor(nullptr) {
+Consumer::Consumer(const std::string& root, const std::string& topic, const std::string& name, TopicOpt* opt) : _topic(EnvManager::getEnv(root)->getTopic(topic)), _name(name), _current(0), _lastOffset(-1), _env(nullptr), _db(0), _rtxn(nullptr), _cursor(nullptr) {
     if (opt) {
         _opt = *opt;
     } else {
@@ -27,33 +27,35 @@ void Consumer::pop(BatchType& result, size_t cnt) {
 
     {
         Txn txn(_topic->getEnv(), NULL);
-        mdb_txn_renew(_rtxn);
 
+        uint64_t phead = _topic->getProducerHead(txn);
         uint64_t head = _topic->getConsumerHead(txn, _name);
-
-        if (head - _topic->getProducerHead(txn) == 1)
+        
+        if ((head - phead == 1) || phead == 0)
             return;
 
         int rc = _cursor->gte(head);
 
         if (rc == 0) {
             uint64_t offset = 0;
+
             for (; rc == 0 && cnt > 0; --cnt) {
                 offset = _cursor->key<uint64_t>();
                 const char* data = (const char*)_cursor->val().mv_data;
                 size_t len = _cursor->val().mv_size;
                 result.push_back(ItemType(offset, data, len));
+                byte += len;
                 rc = _cursor->next();
             }
 
             if (offset > 0) {
-                _topic->setConsumerHead(txn, _name, offset + 1);
+                _topic->setConsumerHead(txn, _name, offset + 1, byte);
                 txn.commit();
             }
         } else {
             if (rc != MDB_NOTFOUND) cout << "Consumer seek error: " << mdb_strerror(rc) << endl;
 
-            if (head < _topic->getProducerHead(txn)) {
+            if (head <= _topic->getProducerHead(txn)) {
                 shouldRotate = true;
             }
         }
@@ -94,6 +96,7 @@ void Consumer::openHead(Txn* txn) {
     mdb_txn_begin(_env, NULL, MDB_RDONLY, &_rtxn);
     _cursor = new MDBCursor(_db, _rtxn);
     mdb_txn_reset(_rtxn);
+    mdb_txn_renew(_rtxn);
 }
 
 void Consumer::closeCurrent() {
