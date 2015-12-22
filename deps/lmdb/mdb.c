@@ -2649,10 +2649,11 @@ mdb_txn_begin(MDB_env *env, MDB_txn *parent, unsigned int flags, MDB_txn **ret)
 	MDB_ntxn *ntxn;
 	int rc, size, tsize = sizeof(MDB_txn);
 
-	if (env->me_flags & MDB_FATAL_ERROR) {
-		DPUTS("environment had fatal error, must shutdown!");
-		return MDB_PANIC;
-	}
+    fprintf(stderr, "flags: %d\n", flags);
+    if (env->me_flags & MDB_FATAL_ERROR) {
+        DPUTS("environment had fatal error, must shutdown!");
+        return MDB_PANIC;
+    }
 	if ((env->me_flags & MDB_RDONLY) && !(flags & MDB_RDONLY))
 		return EACCES;
 	if (parent) {
@@ -2747,8 +2748,8 @@ ok:
 	} else {
 		*ret = txn;
 		DPRINTF(("begin txn %"Z"u%c %p on mdbenv %p, root page %"Z"u",
-			txn->mt_txnid, (txn->mt_flags & MDB_TXN_RDONLY) ? 'r' : 'w',
-			(void *) txn, (void *) env, txn->mt_dbs[MAIN_DBI].md_root));
+                 txn->mt_txnid, (txn->mt_flags & MDB_TXN_RDONLY) ? 'r' : 'w',
+                 (void *) txn, (void *) env, txn->mt_dbs[MAIN_DBI].md_root));
 	}
 
 	return rc;
