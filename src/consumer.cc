@@ -3,7 +3,7 @@
 
 using namespace std;
 
-Consumer::Consumer(const std::string& root, const std::string& topic, const std::string& name, TopicOpt* opt) : _topic(EnvManager::getEnv(root)->getTopic(topic)), _name(name), _current(0), _lastOffset(-1), _env(nullptr), _db(0), _rtxn(nullptr), _cursor(nullptr) {
+Consumer::Consumer(const std::string& root, const std::string& topic, const std::string& name, TopicOpt* opt) : _topic(EnvManager::getEnv(root)->getTopic(topic)), _name(name), _current(0), _lastOffset(0), _env(nullptr), _db(0), _rtxn(nullptr), _cursor(nullptr) {
     if (opt) {
         _opt = *opt;
     } else {
@@ -30,7 +30,7 @@ void Consumer::pop(BatchType& result, size_t cnt) {
 
         uint64_t phead = _topic->getProducerHead(txn);
         uint64_t head = _topic->getConsumerHead(txn, _name);
-        
+
         if ((head - phead == 1) || phead == 0)
             return;
 
@@ -38,6 +38,7 @@ void Consumer::pop(BatchType& result, size_t cnt) {
 
         if (rc == 0) {
             uint64_t offset = 0;
+            uint64_t byte = _topic->getConsumerByte(txn, _name);
 
             for (; rc == 0 && cnt > 0; --cnt) {
                 offset = _cursor->key<uint64_t>();
