@@ -84,20 +84,20 @@ TopicStatus Topic::status() {
     return ret;
 }
 
-uint32_t Topic::getProducerHeadFile(Txn& txn) {
+uint32_t Topic::getProducerHeadFile(Txn const &txn) {
     MDBCursor cur(_desc, txn.getEnvTxn());
     cur.gotoLast();
     return cur.key<uint32_t>();
 }
 
-void Topic::setProducerHeadFile(Txn& txn, uint32_t file, uint64_t offset) {
+void Topic::setProducerHeadFile(Txn const &txn, uint32_t file, uint64_t offset) {
     MDB_val key{ sizeof(file), &file},
             val{ sizeof(offset), &offset };
 
             mdb_put(txn.getEnvTxn(), _desc, &key, &val, 0);
 }
 
-uint64_t Topic::getProducerHead(Txn& txn) {
+uint64_t Topic::getProducerHead(const Txn &txn) {
     MDB_val key{ strlen(keyProducerStr), reinterpret_cast<void*>(keyProducerStr) },
             val{ 0, 0 };
 
@@ -105,7 +105,7 @@ uint64_t Topic::getProducerHead(Txn& txn) {
             return *reinterpret_cast<uint64_t*>(val.mv_data);
 }
 
-void Topic::setProducerHead(Txn& txn, uint64_t head) {
+void Topic::setProducerHead(const Txn &txn, uint64_t head) {
     MDB_val key{ strlen(keyProducerStr), reinterpret_cast<void*>(keyProducerStr) },
             val{ sizeof(head), &head };
 
@@ -135,7 +135,7 @@ uint32_t Topic::getConsumerHeadFile(Txn& txn, const std::string& name, uint32_t 
     return ret;
 }
 
-uint64_t Topic::getConsumerHead(Txn& txn, const std::string& name) {
+uint64_t Topic::getConsumerHead(const Txn &txn, const std::string& name) {
     char keyStr[4096];
     sprintf(keyStr, keyConsumerStr, name.c_str());
 
@@ -155,7 +155,7 @@ uint64_t Topic::getConsumerHead(Txn& txn, const std::string& name) {
     }
 }
 
-uint64_t Topic::getConsumerByte(Txn& txn, const std::string& name) {
+uint64_t Topic::getConsumerByte(Txn const &txn, const std::string& name) {
     char keyStr[4096];
     sprintf(keyStr, keyConsumerStr, name.c_str());
 
@@ -175,7 +175,7 @@ uint64_t Topic::getConsumerByte(Txn& txn, const std::string& name) {
     }
 }
 
-void Topic::setConsumerHead(Txn& txn, const std::string& name, uint64_t head, uint64_t byte) {
+void Topic::setConsumerHead(Txn const &txn, const std::string& name, uint64_t head, uint64_t byte) {
     char keyStr[4096];
     sprintf(keyStr, keyConsumerStr, name.c_str());
 
@@ -190,7 +190,7 @@ int Topic::getChunkFilePath(char* buf, uint32_t chunkSeq) {
     return sprintf(buf, "%s/%s.%d", getEnv()->getRoot().c_str(), getName().c_str(), chunkSeq);
 }
 
-size_t Topic::countChunks(Txn& txn) {
+size_t Topic::countChunks(Txn const &txn) {
     MDBCursor cur(_desc, txn.getEnvTxn());
 
     size_t count = 0;
@@ -205,7 +205,7 @@ size_t Topic::countChunks(Txn& txn) {
     return count;
 }
 
-void Topic::removeOldestChunk(Txn& txn) {
+void Topic::removeOldestChunk(Txn const &txn) {
     MDBCursor cur(_desc, txn.getEnvTxn());
 
     uint32_t oldest = 0;
