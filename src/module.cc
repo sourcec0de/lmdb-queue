@@ -206,7 +206,7 @@ class ConsumerWrap : public ObjectWrap {
         NanReturnUndefined();
     }
 
-    template<DataType DT> static NAN_METHOD(updateOffset) {
+    static NAN_METHOD(updateOffset) {
         NanScope();
 
         ConsumerWrap* ptr = ObjectWrap::Unwrap<ConsumerWrap>(args.This());

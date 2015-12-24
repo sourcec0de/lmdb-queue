@@ -66,7 +66,7 @@ void Consumer::pop(BatchType& result, size_t cnt) {
 
 void Consumer::updateOffset() {
     Txn txn(_topic->getEnv(), NULL);
-    _topic->setConsumerHead(txn, _name, _lastOffset + 1, 0);
+    _topic->setConsumerHead(txn, _name, _lastOffset + 1);
     txn.commit();
 }
 
