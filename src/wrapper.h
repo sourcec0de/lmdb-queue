@@ -1,10 +1,13 @@
+#ifndef SRC_WRAPPER_H_
+#define SRC_WRAPPER_H_
+
 #pragma once
 
 #include <iostream>
 #include <lmdb/lmdb.h>
 
 class MDBCursor {
-public:
+  public:
     MDBCursor(MDB_dbi db, MDB_txn *txn) : _cursor(nullptr) {
         /* init list not supported in vs 2013 */
         _key.mv_size = _val.mv_size = 0;
@@ -20,9 +23,9 @@ public:
         if (_cursor) mdb_cursor_close(_cursor);
     }
 
-public:
-    template<class INT> INT key() { return *(INT*)_key.mv_data; }
-    template<class INT> INT val() { return *(INT*)_val.mv_data; }
+  public:
+    template<class INT> INT key() { return *reinterpret_cast<INT*>(_key.mv_data); }
+    template<class INT> INT val() { return *reinterpret_cast<INT*>(_val.mv_data); }
     const MDB_val& key() { return _key; }
     const MDB_val& val() { return _val; }
     int gotoFirst() { return mdb_cursor_get(_cursor, &_key, &_val, MDB_FIRST); }
@@ -46,14 +49,16 @@ public:
     int gte(uint32_t k) { return getInt(k, MDB_SET_RANGE); }
     int gte(uint64_t k) { return getInt(k, MDB_SET_RANGE); }
 
-private:
+  private:
     template<typename INT> int getInt(INT intkey, MDB_cursor_op op) {
         _key.mv_size = sizeof(intkey);
         _key.mv_data = &intkey;
         return mdb_cursor_get(_cursor, &_key, &_val, op);
     }
 
-private:
+  private:
     MDB_cursor *_cursor;
     MDB_val _key, _val;
 };
+
+#endif  // SRC_WRAPPER_H_

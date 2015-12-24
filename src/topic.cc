@@ -37,7 +37,7 @@ Topic::Topic(Env* env, const string& name) : _env(env), _name(name) {
     MDB_val key{ 0, 0 }, val{ 0, 0 };
 
     uint64_t head = 0;
-    key.mv_data = (void*)keyProducerStr;
+    key.mv_data = reinterpret_cast<void*>(keyProducerStr);
     key.mv_size = strlen(keyProducerStr);
     val.mv_data = &head;
     val.mv_size = sizeof(head);
@@ -76,7 +76,7 @@ TopicStatus Topic::status() {
         const char* namePtr = ((const char*)cur.key().mv_data) + strlen(prefixConsumerStr);
         strncpy(name, namePtr, nameLen);
         name[nameLen] = 0;
-        ret.consumerHeads[name] = *(ConsumeInfo*)(cur.val().mv_data);
+        ret.consumerHeads[name] = *reinterpret_cast<ConsumeInfo*>(cur.val().mv_data);
 
         rc = cur.next();
     }
@@ -98,15 +98,15 @@ void Topic::setProducerHeadFile(Txn& txn, uint32_t file, uint64_t offset) {
 }
 
 uint64_t Topic::getProducerHead(Txn& txn) {
-    MDB_val key{ strlen(keyProducerStr), (void*)keyProducerStr },
+    MDB_val key{ strlen(keyProducerStr), reinterpret_cast<void*>(keyProducerStr) },
             val{ 0, 0 };
 
             mdb_get(txn.getEnvTxn(), _desc, &key, &val);
-            return *(uint64_t*)val.mv_data;
+            return *reinterpret_cast<uint64_t*>(val.mv_data);
 }
 
 void Topic::setProducerHead(Txn& txn, uint64_t head) {
-    MDB_val key{ strlen(keyProducerStr), (void*)keyProducerStr },
+    MDB_val key{ strlen(keyProducerStr), reinterpret_cast<void*>(keyProducerStr) },
             val{ sizeof(head), &head };
 
             mdb_put(txn.getEnvTxn(), _desc, &key, &val, 0);

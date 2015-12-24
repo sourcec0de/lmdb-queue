@@ -50,8 +50,7 @@ void Consumer::pop(BatchType& result, size_t cnt) {
             }
 
             if (offset > 0) {
-                _topic->setConsumerHead(txn, _name, offset + 1, byte);
-                txn.commit();
+                _lastOffset = offset;
             }
         } else {
             if (rc != MDB_NOTFOUND) cout << "Consumer seek error: " << mdb_strerror(rc) << endl;
@@ -66,6 +65,12 @@ void Consumer::pop(BatchType& result, size_t cnt) {
         rotate();
         pop(result, cnt);
     }
+}
+
+void Consumer::updateOffset() {
+    Txn txn(_topic->getEnv(), NULL);
+    _topic->setConsumerHead(txn, _name, _lastOffset + 1, 0);
+    txn.commit();
 }
 
 void Consumer::openHead(Txn* txn) {
