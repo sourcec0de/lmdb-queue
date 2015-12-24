@@ -8,27 +8,28 @@
 class Topic;
 
 class Consumer {
-public:
+  public:
     typedef std::tuple<uint64_t, const char*, size_t> ItemType;
     typedef std::vector<ItemType> BatchType;
 
-public:
+  public:
     Consumer(const std::string& root, const std::string& topic, const std::string& name, TopicOpt* opt);
     ~Consumer();
 
-private:
+  private:
     Consumer(const Consumer&);
     Consumer& operator=(const Consumer&);
 
-public:
+  public:
     void pop(BatchType& result, size_t cnt);
+    void updateOffset();
 
-private:
+  private:
     void openHead(Txn* txn);
     void closeCurrent();
     void rotate();
 
-private:
+  private:
     TopicOpt _opt;
     Topic* _topic;
     std::string _name;
