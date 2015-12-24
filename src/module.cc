@@ -144,6 +144,7 @@ class ConsumerWrap : public ObjectWrap {
         tpl->InstanceTemplate()->SetInternalFieldCount(1);
 
         NODE_SET_PROTOTYPE_METHOD(tpl, "offset", ConsumerWrap::offset);
+        NODE_SET_PROTOTYPE_METHOD(tpl, "updateOffset", ConsumerWrap::updateOffset);
         NODE_SET_PROTOTYPE_METHOD(tpl, "popString", ConsumerWrap::pop<STRING_TYPE>);
         NODE_SET_PROTOTYPE_METHOD(tpl, "popBuffer", ConsumerWrap::pop<BUFFER_TYPE>);
 
