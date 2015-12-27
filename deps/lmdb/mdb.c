@@ -2649,7 +2649,6 @@ mdb_txn_begin(MDB_env *env, MDB_txn *parent, unsigned int flags, MDB_txn **ret)
 	MDB_ntxn *ntxn;
 	int rc, size, tsize = sizeof(MDB_txn);
 
-    fprintf(stderr, "flags: %d\n", flags);
     if (env->me_flags & MDB_FATAL_ERROR) {
         DPUTS("environment had fatal error, must shutdown!");
         return MDB_PANIC;
