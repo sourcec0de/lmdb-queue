@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include "topic.h"
 #include "consumer.h"
 
