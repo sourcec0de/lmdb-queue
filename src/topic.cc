@@ -37,7 +37,7 @@ Topic::Topic(Env* env, const string& name) : _env(env), _name(name) {
     MDB_val key{ 0, 0 }, val{ 0, 0 };
 
     uint64_t head = 0;
-    key.mv_data = reinterpret_cast<void*>(keyProducerStr);
+    key.mv_data = (void*)keyProducerStr;
     key.mv_size = strlen(keyProducerStr);
     val.mv_data = &head;
     val.mv_size = sizeof(head);
@@ -76,37 +76,37 @@ TopicStatus Topic::status() {
         const char* namePtr = ((const char*)cur.key().mv_data) + strlen(prefixConsumerStr);
         strncpy(name, namePtr, nameLen);
         name[nameLen] = 0;
-        ret.consumerHeads[name] = *reinterpret_cast<ConsumeInfo*>(cur.val().mv_data);
 
+        ret.consumerHeads[name] = cur.val<uint64_t>();
         rc = cur.next();
     }
 
     return ret;
 }
 
-uint32_t Topic::getProducerHeadFile(Txn const &txn) {
+uint32_t Topic::getProducerHeadFile(Txn& txn) {
     MDBCursor cur(_desc, txn.getEnvTxn());
     cur.gotoLast();
     return cur.key<uint32_t>();
 }
 
-void Topic::setProducerHeadFile(Txn const &txn, uint32_t file, uint64_t offset) {
+void Topic::setProducerHeadFile(Txn& txn, uint32_t file, uint64_t offset) {
     MDB_val key{ sizeof(file), &file},
             val{ sizeof(offset), &offset };
 
             mdb_put(txn.getEnvTxn(), _desc, &key, &val, 0);
 }
 
-uint64_t Topic::getProducerHead(const Txn &txn) {
-    MDB_val key{ strlen(keyProducerStr), reinterpret_cast<void*>(keyProducerStr) },
+uint64_t Topic::getProducerHead(Txn& txn) {
+    MDB_val key{ strlen(keyProducerStr), (void*)keyProducerStr },
             val{ 0, 0 };
 
             mdb_get(txn.getEnvTxn(), _desc, &key, &val);
-            return *reinterpret_cast<uint64_t*>(val.mv_data);
+            return *(uint64_t*)val.mv_data;
 }
 
-void Topic::setProducerHead(const Txn &txn, uint64_t head) {
-    MDB_val key{ strlen(keyProducerStr), reinterpret_cast<void*>(keyProducerStr) },
+void Topic::setProducerHead(Txn& txn, uint64_t head) {
+    MDB_val key{ strlen(keyProducerStr), (void*)keyProducerStr },
             val{ sizeof(head), &head };
 
             mdb_put(txn.getEnvTxn(), _desc, &key, &val, 0);
@@ -135,19 +135,17 @@ uint32_t Topic::getConsumerHeadFile(Txn& txn, const std::string& name, uint32_t 
     return ret;
 }
 
-uint64_t Topic::getConsumerHead(const Txn &txn, const std::string& name) {
+uint64_t Topic::getConsumerHead(Txn& txn, const std::string& name) {
     char keyStr[4096];
-    sprintf(keyStr, keyConsumerStr, name.c_str());
+    memset(keyStr, '\0', 4096);
+    snprintf(keyStr, strlen(keyConsumerStr) + strlen(name.c_str()) + 1, keyConsumerStr, name.c_str());
 
     MDB_val key{ strlen(keyStr), keyStr }, val{ 0, nullptr };
     int rc = mdb_get(txn.getEnvTxn(), _desc, &key, &val);
-
     if (rc == 0) {
         return *(uint64_t*)val.mv_data;
     } else {
         if (rc != MDB_NOTFOUND) cout << "Consumer seek error: " << mdb_strerror(rc) << endl;
-
-        std::cout << "Get Consumer Head Err: " << rc << std::endl;
 
         MDBCursor cur(_desc, txn.getEnvTxn());
         cur.gte(uint32_t(0));
@@ -155,42 +153,23 @@ uint64_t Topic::getConsumerHead(const Txn &txn, const std::string& name) {
     }
 }
 
-uint64_t Topic::getConsumerByte(Txn const &txn, const std::string& name) {
+void Topic::setConsumerHead(Txn& txn, const std::string& name, uint64_t head) {
     char keyStr[4096];
-    sprintf(keyStr, keyConsumerStr, name.c_str());
+    memset(keyStr, '\0', 4096);
+    snprintf(keyStr, strlen(keyConsumerStr) + strlen(name.c_str()) + 1, keyConsumerStr, name.c_str());
 
-    MDB_val key{ strlen(keyStr), keyStr }, val{ 0, nullptr };
-    int rc = mdb_get(txn.getEnvTxn(), _desc, &key, &val);
-    if (rc == 0) {
-        return ((ConsumeInfo*)val.mv_data)->byte;
-    } else {
-        if (rc != MDB_NOTFOUND) cout << "Consumer seek error: " << mdb_strerror(rc) << endl;
-
-        MDBCursor cur(_desc, txn.getEnvTxn());
-        cur.gte(uint32_t(0));
-        if (cur.val<uint64_t>() == 0)
-            return 0;
-        else
-            return ((ConsumeInfo*)val.mv_data)->byte;
-    }
-}
-
-void Topic::setConsumerHead(Txn const &txn, const std::string& name, uint64_t head, uint64_t byte) {
-    char keyStr[4096];
-    sprintf(keyStr, keyConsumerStr, name.c_str());
-
-    ConsumeInfo info = { head, byte };
     MDB_val key{ strlen(keyStr), keyStr },
-            val{ sizeof(info), &info };
+            val{ sizeof(head), &head };
 
             mdb_put(txn.getEnvTxn(), _desc, &key, &val, 0);
 }
 
 int Topic::getChunkFilePath(char* buf, uint32_t chunkSeq) {
-    return sprintf(buf, "%s/%s.%d", getEnv()->getRoot().c_str(), getName().c_str(), chunkSeq);
+    return snprintf(buf, strlen(getEnv()->getRoot().c_str()) + strlen(getName().c_str()) + strlen(".") + sizeof(chunkSeq) + 1,
+                    "%s/%s.%d", getEnv()->getRoot().c_str(), getName().c_str(), chunkSeq);
 }
 
-size_t Topic::countChunks(Txn const &txn) {
+size_t Topic::countChunks(Txn& txn) {
     MDBCursor cur(_desc, txn.getEnvTxn());
 
     size_t count = 0;
@@ -205,7 +184,7 @@ size_t Topic::countChunks(Txn const &txn) {
     return count;
 }
 
-void Topic::removeOldestChunk(Txn const &txn) {
+void Topic::removeOldestChunk(Txn& txn) {
     MDBCursor cur(_desc, txn.getEnvTxn());
 
     uint32_t oldest = 0;
@@ -215,6 +194,7 @@ void Topic::removeOldestChunk(Txn const &txn) {
         cur.del();
 
         char path[4096];
+        memset(path, '\0', 4096);
         getChunkFilePath(path, oldest);
         remove(path);
         strcat(path, "-lock");

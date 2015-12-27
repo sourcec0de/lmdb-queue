@@ -83,12 +83,12 @@ bool Producer::push(const Producer::BatchType& batch) {
             MDB_val key{ sizeof(head), &++head },
                     val{ item.len(), (void*)item.data() };
 
-            int rc = mdb_put(txn.getTxn(), _db, &key, &val, MDB_APPEND);
-            if (rc == MDB_MAP_FULL) {
-                txn.abort();
-                isFull = true;
-                break;
-            }
+                    int rc = mdb_put(txn.getTxn(), _db, &key, &val, MDB_APPEND);
+                    if (rc == MDB_MAP_FULL) {
+                        txn.abort();
+                        isFull = true;
+                        break;
+                    }
         }
 
         if (!isFull) {
@@ -194,6 +194,7 @@ void Producer::openHead(Txn* txn, bool rotating) {
     _current = headFile;
 
     char path[4096];
+    memset(path, '\0', 4096);
     _topic->getChunkFilePath(path, headFile);
 
 #ifdef _WIN32

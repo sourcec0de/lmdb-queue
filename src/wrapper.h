@@ -1,6 +1,3 @@
-#ifndef SRC_WRAPPER_H_
-#define SRC_WRAPPER_H_
-
 #pragma once
 
 #include <iostream>
@@ -24,8 +21,8 @@ class MDBCursor {
     }
 
   public:
-    template<class INT> INT key() { return *reinterpret_cast<INT*>(_key.mv_data); }
-    template<class INT> INT val() { return *reinterpret_cast<INT*>(_val.mv_data); }
+    template<class INT> INT key() { return *(INT*)_key.mv_data; }
+    template<class INT> INT val() { return *(INT*)_val.mv_data; }
     const MDB_val& key() { return _key; }
     const MDB_val& val() { return _val; }
     int gotoFirst() { return mdb_cursor_get(_cursor, &_key, &_val, MDB_FIRST); }
@@ -60,5 +57,3 @@ class MDBCursor {
     MDB_cursor *_cursor;
     MDB_val _key, _val;
 };
-
-#endif  // SRC_WRAPPER_H_

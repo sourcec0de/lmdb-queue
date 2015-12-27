@@ -206,16 +206,6 @@ class ConsumerWrap : public ObjectWrap {
         NanReturnUndefined();
     }
 
-    template<DataType DT> static NAN_METHOD(updateOffset) {
-        NanScope();
-
-        ConsumerWrap* ptr = ObjectWrap::Unwrap<ConsumerWrap>(args.This());
-
-        ptr->_handle.updateOffset();
-
-        NanReturnUndefined();
-    }
-
   private:
     ConsumerWrap(const char* path, const char* topicName, const char* name, TopicOpt* opt) : _handle(path, topicName, name, opt), _cur(0), _batchSize(128) { }
 
@@ -263,11 +253,8 @@ class TopicWrap : public ObjectWrap {
         ret->Set(NanNew("producerHead"), NanNew<Number>(double(st.producerHead)));
 
         Local<Object> consumerHeads = NanNew<Object>();
-        Handle<Object> info = NanNew<Object>();
         for (auto it : st.consumerHeads) {
-            info->Set(NanNew<String>("head"), NanNew<Number>(double(it.second.head)));
-            info->Set(NanNew<String>("byte"), NanNew<Number>(double(it.second.byte)));
-            consumerHeads->Set(NanNew(it.first), info);
+            consumerHeads->Set(NanNew(it.first), NanNew<Number>(double(it.second)));
         }
         ret->Set(NanNew("consumerHeads"), consumerHeads);
 

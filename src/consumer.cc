@@ -38,19 +38,18 @@ void Consumer::pop(BatchType& result, size_t cnt) {
 
         if (rc == 0) {
             uint64_t offset = 0;
-            uint64_t byte = _topic->getConsumerByte(txn, _name);
 
             for (; rc == 0 && cnt > 0; --cnt) {
                 offset = _cursor->key<uint64_t>();
                 const char* data = (const char*)_cursor->val().mv_data;
                 size_t len = _cursor->val().mv_size;
                 result.push_back(ItemType(offset, data, len));
-                byte += len;
                 rc = _cursor->next();
             }
 
             if (offset > 0) {
-                _lastOffset = offset;
+                _topic->setConsumerHead(txn, _name, offset + 1);
+                txn.commit();
             }
         } else {
             if (rc != MDB_NOTFOUND) cout << "Consumer seek error: " << mdb_strerror(rc) << endl;
@@ -67,16 +66,11 @@ void Consumer::pop(BatchType& result, size_t cnt) {
     }
 }
 
-void Consumer::updateOffset() {
-    Txn txn(_topic->getEnv(), NULL);
-    _topic->setConsumerHead(txn, _name, _lastOffset + 1, 0);
-    txn.commit();
-}
-
 void Consumer::openHead(Txn* txn) {
     _current = _topic->getConsumerHeadFile(*txn, _name, _current);
 
     char path[4096];
+    memset(path, '\0', 4096);
     _topic->getChunkFilePath(path, _current);
 
     mdb_env_create(&_env);

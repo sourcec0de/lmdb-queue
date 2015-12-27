@@ -19,18 +19,13 @@ struct TopicOpt {
     size_t chunksToKeep;
 };
 
-struct ConsumeInfo {
-    uint64_t head;
-    uint64_t byte;
-};
-
 struct TopicStatus{
     uint64_t producerHead;
-    std::map<std::string, ConsumeInfo> consumerHeads;
+    std::map<std::string, uint64_t> consumerHeads;
 };
 
 class Env {
-private:
+  private:
     friend class EnvManager;
     friend class Txn;
 
@@ -38,7 +33,7 @@ private:
     Env(const Env&);
     Env& operator=(const Env&);
 
-public:
+  public:
     ~Env();
 
     const std::string& getRoot() { return _root; }
@@ -46,7 +41,7 @@ public:
 
     Topic* getTopic(const std::string& name);
 
-private:
+  private:
     std::string _root;
     MDB_env *_env;
 
@@ -58,10 +53,10 @@ private:
 };
 
 class EnvManager {
-public:
+  public:
     static Env* getEnv(const std::string& root, EnvOpt *opt = NULL);
 
-private:
+  private:
     std::mutex _mtx;
 
     typedef std::unique_ptr<Env> EnvPtr;
@@ -70,7 +65,7 @@ private:
 };
 
 class Txn {
-public:
+  public:
     Txn(Env* env, MDB_env* consumerOrProducerEnv, bool readOnly = false) : _abort(false), _envTxn(nullptr), _cpTxn(nullptr) {
         mdb_txn_begin(env->_env, NULL, 0, &_envTxn);
         if (consumerOrProducerEnv) mdb_txn_begin(consumerOrProducerEnv, NULL, 0, &_cpTxn);
@@ -81,7 +76,7 @@ public:
         if (_envTxn) mdb_txn_abort(_envTxn);
     }
 
-public:
+  public:
     inline MDB_txn* getEnvTxn() { return _envTxn; }
     inline MDB_txn* getTxn() { return _cpTxn; }
 
@@ -108,11 +103,11 @@ public:
         return rc;
     }
 
-private:
+  private:
     Txn(const Txn&);
     Txn& operator=(const Txn&);
 
-private:
+  private:
     bool _abort;
     MDB_txn *_envTxn, *_cpTxn;
 };
