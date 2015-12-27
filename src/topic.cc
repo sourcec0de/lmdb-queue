@@ -165,9 +165,7 @@ void Topic::setConsumerHead(Txn& txn, const std::string& name, uint64_t head) {
 }
 
 int Topic::getChunkFilePath(char* buf, uint32_t chunkSeq) {
-    return snprintf(buf, strlen(getEnv()->getRoot().c_str()) + strlen("/") +
-                    strlen(getName().c_str()) + strlen(".") + sizeof(chunkSeq) + 1,
-                    "%s/%s.%d", getEnv()->getRoot().c_str(), getName().c_str(), chunkSeq);
+    return snprintf(buf, 4096, "%s/%s.%d", getEnv()->getRoot().c_str(), getName().c_str(), chunkSeq);
 }
 
 size_t Topic::countChunks(Txn& txn) {
