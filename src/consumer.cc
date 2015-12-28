@@ -33,8 +33,10 @@ void Consumer::pop(BatchType& result, size_t cnt) {
         uint64_t phead = _topic->getProducerHead(* _mtxn);
         uint64_t head = _topic->getConsumerHead(* _mtxn, _name);
 
-        if ((head - phead == 1) || phead == 0)
+        if ((head - phead == 1) || phead == 0) {
+            delete _mtxn;
             return;
+        }
 
         int rc = _cursor->gte(head);
 
