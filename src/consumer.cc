@@ -20,6 +20,8 @@ Consumer::Consumer(const std::string& root, const std::string& topic, const std:
 }
 
 Consumer::~Consumer() {
+    if (_mtxn)
+        delete _mtxn;
     closeCurrent();
 }
 
