@@ -36,6 +36,7 @@ void Consumer::pop(BatchType& result, size_t cnt) {
         uint64_t head = _topic->getConsumerHead(* _mtxn, _name);
 
         if ((head - phead == 1) || phead == 0) {
+            std::cout << "head-phead == 1 delete" << std::endl;
             delete _mtxn;
             return;
         }
@@ -60,6 +61,7 @@ void Consumer::pop(BatchType& result, size_t cnt) {
             if (rc != MDB_NOTFOUND) cout << "Consumer seek error: " << mdb_strerror(rc) << endl;
 
             if (head <= _topic->getProducerHead(* _mtxn)) {
+                std::cout << "shouldRotate delete" << std::endl;
                 shouldRotate = true;
                 delete _mtxn;
             }
@@ -75,6 +77,7 @@ void Consumer::pop(BatchType& result, size_t cnt) {
 void Consumer::updateOffset() {
     _topic->setConsumerHead(* _mtxn, _name, _lastOffset + 1);
     _mtxn->commit();
+    std::cout << "updateOffset delete" << std::endl;
     delete _mtxn;
 }
 
