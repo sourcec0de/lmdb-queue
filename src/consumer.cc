@@ -28,7 +28,7 @@ void Consumer::pop(BatchType& result, size_t cnt) {
     bool shouldRotate = false;
 
     {
-        Txn txn(_topic->getEnv(), NULL);
+        _mtxn =  new Txn(_topic->getEnv(), NULL);
 
         uint64_t phead = _topic->getProducerHead(txn);
         uint64_t head = _topic->getConsumerHead(txn, _name);
@@ -50,14 +50,14 @@ void Consumer::pop(BatchType& result, size_t cnt) {
             }
 
             if (offset > 0) {
-                _topic->setConsumerHead(txn, _name, offset + 1);
-                txn.commit();
+                _lastOffset = offset;
             }
         } else {
             if (rc != MDB_NOTFOUND) cout << "Consumer seek error: " << mdb_strerror(rc) << endl;
 
             if (head <= _topic->getProducerHead(txn)) {
                 shouldRotate = true;
+                delete _mtxn;
             }
         }
     }
@@ -66,6 +66,12 @@ void Consumer::pop(BatchType& result, size_t cnt) {
         rotate();
         pop(result, cnt);
     }
+}
+
+void Consumer::updateOffset() {
+    _topic->setConsumerHead(* _mtxn, _name, _lastOffset + 1);
+    _mtxn->commit();
+    delete _mtxn;
 }
 
 void Consumer::openHead(Txn* txn) {

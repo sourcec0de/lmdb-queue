@@ -38,6 +38,7 @@ class Consumer {
     uint64_t _lastOffset;
     MDB_env* _env;
     MDB_dbi _db;
+    MDB_txn* _mtxn;
     MDB_txn* _rtxn;
     MDBCursor* _cursor;
 };
