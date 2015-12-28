@@ -212,7 +212,7 @@ class ConsumerWrap : public ObjectWrap {
 
         ConsumerWrap* ptr = ObjectWrap::Unwrap<ConsumerWrap>(args.This());
 
-        ptr->updateOffset();
+        ptr->_handle.updateOffset();
 
         NanReturnUndefined();
     }
