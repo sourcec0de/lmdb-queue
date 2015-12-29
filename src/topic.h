@@ -27,7 +27,7 @@ class Topic {
     uint64_t getConsumerHead(Txn& txn, const std::string& name);
     uint64_t getConsumerCurrent(Txn& txn, const std::string& name);
 
-    void setConsumerHead(Txn& txn, const std::string& name, uint64_t head);
+    void setConsumerHead(Txn& txn, const std::string& name, uint64_t head, uint64_t current);
 
     int getChunkFilePath(char* buf, uint32_t chunkSeq);
     size_t countChunks(Txn& txn);

@@ -173,17 +173,6 @@ uint64_t Topic::getConsumerCurrent(Txn &txn, const std::string& name) {
     }
 }
 
-void Topic::setConsumerHead(Txn& txn, const std::string& name, uint64_t head) {
-    char keyStr[4096];
-    memset(keyStr, '\0', 4096);
-    snprintf(keyStr, strlen(keyConsumerStr) + strlen(name.c_str()) + 1, keyConsumerStr, name.c_str());
-
-    MDB_val key{ strlen(keyStr), keyStr },
-            val{ sizeof(head), &head };
-
-            mdb_put(txn.getEnvTxn(), _desc, &key, &val, 0);
-}
-
 void Topic::setConsumerHead(Txn& txn, const std::string& name, uint64_t head, uint64_t current) {
     char keyStr[4096];
     sprintf(keyStr, keyConsumerStr, name.c_str());
