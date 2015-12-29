@@ -77,7 +77,7 @@ TopicStatus Topic::status() {
         strncpy(name, namePtr, nameLen);
         name[nameLen] = 0;
 
-        ret.consumerHeads[name] = cur.val<uint64_t>();
+        ret.consumerHeads[name] = *reinterpret_cast<ConsumeInfo*>(cur.val().mv_data);
         rc = cur.next();
     }
 
