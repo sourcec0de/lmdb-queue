@@ -144,6 +144,7 @@ class ConsumerWrap : public ObjectWrap {
         tpl->InstanceTemplate()->SetInternalFieldCount(1);
 
         NODE_SET_PROTOTYPE_METHOD(tpl, "offset", ConsumerWrap::offset);
+        NODE_SET_PROTOTYPE_METHOD(tpl, "updateOffset", ConsumerWrap::updateOffset);
         NODE_SET_PROTOTYPE_METHOD(tpl, "popString", ConsumerWrap::pop<STRING_TYPE>);
         NODE_SET_PROTOTYPE_METHOD(tpl, "popBuffer", ConsumerWrap::pop<BUFFER_TYPE>);
 
@@ -183,6 +184,16 @@ class ConsumerWrap : public ObjectWrap {
         if (ptr->_cur <= ptr->_batch.size()) {
             NanReturnValue(NanNew(double(std::get<0>(ptr->_batch.at(ptr->_cur - 1)))));
         }
+
+        NanReturnUndefined();
+    }
+
+    static NAN_METHOD(updateOffset) {
+        NanScope();
+
+        ConsumerWrap* ptr = ObjectWrap::Unwrap<ConsumerWrap>(args.This());
+
+        ptr->_handle.updateOffset();
 
         NanReturnUndefined();
     }

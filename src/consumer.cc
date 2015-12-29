@@ -15,6 +15,8 @@ Consumer::Consumer(const std::string& root, const std::string& topic, const std:
     }
 
     Txn txn(_topic->getEnv(), NULL);
+    uint64_t head = _topic->getConsumerHead(txn, _name);
+    _topic->setConsumerHead(txn, _name, head, head);
     openHead(&txn);
     txn.commit();
 }
@@ -32,11 +34,12 @@ void Consumer::pop(BatchType& result, size_t cnt) {
 
         uint64_t phead = _topic->getProducerHead(txn);
         uint64_t head = _topic->getConsumerHead(txn, _name);
+        uint64_t current = _topic->getConsumerCurrent(txn, _name);
 
-        if ((head - phead == 1) || phead == 0)
+        if ((current - phead == 1) || phead == 0)
             return;
 
-        int rc = _cursor->gte(head);
+        int rc = _cursor->gte(current);
 
         if (rc == 0) {
             uint64_t offset = 0;
@@ -50,13 +53,14 @@ void Consumer::pop(BatchType& result, size_t cnt) {
             }
 
             if (offset > 0) {
-                _topic->setConsumerHead(txn, _name, offset + 1);
+                _lastOffset = offset;
+                _topic->setConsumerHead(txn, _name, head, offset + 1);
                 txn.commit();
             }
         } else {
             if (rc != MDB_NOTFOUND) cout << "Consumer seek error: " << mdb_strerror(rc) << endl;
 
-            if (head <= _topic->getProducerHead(txn)) {
+            if (current <= _topic->getProducerHead(txn)) {
                 shouldRotate = true;
             }
         }
@@ -66,6 +70,12 @@ void Consumer::pop(BatchType& result, size_t cnt) {
         rotate();
         pop(result, cnt);
     }
+}
+
+void Consumer::updateOffset() {
+    Txn txn(_topic->getEnv(), NULL);
+    _topic->setConsumerHead(txn, _name, _lastOffset + 1, _lastOffset + 1);
+    txn.commit();
 }
 
 void Consumer::openHead(Txn* txn) {
