@@ -141,7 +141,7 @@ uint32_t Topic::getConsumerHeadFileByLastOffset(Txn& txn, uint64_t lastOffset,
   int rc = cur.gte(searchFrom);
   uint32_t ret = cur.key<uint32_t>();
   uint64_t fh = cur.val<uint64_t>();
-  while (rc == 0 &&; lastOffset >= fh) {
+  while (rc == 0 && lastOffset >= fh) {
     rc = cur.next();
     if (rc == 0) {
       uint64_t ch = cur.val<uint64_t>();
