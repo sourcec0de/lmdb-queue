@@ -8,29 +8,24 @@ using namespace std;
 using namespace v8;
 using namespace node;
 
-enum DataType {
-  STRING_TYPE = 1,
-  BUFFER_TYPE
-};
+enum DataType { STRING_TYPE = 1, BUFFER_TYPE };
 
-template<DataType DT> class BatchWrap {
+template <DataType DT>
+class BatchWrap {
  public:
   void push(const Local<Value>& val);
 
  public:
-  Producer::BatchType& get() {
-    return _batch;
-  }
+  Producer::BatchType& get() { return _batch; }
 
-  void reserve(size_t sz) {
-    _batch.reserve(sz);
-  }
+  void reserve(size_t sz) { _batch.reserve(sz); }
 
  private:
   Producer::BatchType _batch;
 };
 
-template<> void BatchWrap<STRING_TYPE>::push(const Local<Value>& val) {
+template <>
+void BatchWrap<STRING_TYPE>::push(const Local<Value>& val) {
   v8::Local<v8::String> toStr = val->ToString();
   size_t size = toStr->Utf8Length();
   Producer::ItemType item = Producer::ItemType::create(size + 1);
@@ -38,8 +33,10 @@ template<> void BatchWrap<STRING_TYPE>::push(const Local<Value>& val) {
   _batch.push_back(std::move(item));
 }
 
-template<> void BatchWrap<BUFFER_TYPE>::push(const Local<Value>& val) {
-  _batch.push_back(Producer::ItemType(node::Buffer::Data(val), node::Buffer::Length(val)));
+template <>
+void BatchWrap<BUFFER_TYPE>::push(const Local<Value>& val) {
+  _batch.push_back(
+      Producer::ItemType(node::Buffer::Data(val), node::Buffer::Length(val)));
 }
 
 class ProducerWrap : public ObjectWrap {
@@ -51,11 +48,15 @@ class ProducerWrap : public ObjectWrap {
     tpl->SetClassName(NanNew(className));
     tpl->InstanceTemplate()->SetInternalFieldCount(1);
 
-    NODE_SET_PROTOTYPE_METHOD(tpl, "pushString", ProducerWrap::push<STRING_TYPE>);
-    NODE_SET_PROTOTYPE_METHOD(tpl, "pushBuffer", ProducerWrap::push<BUFFER_TYPE>);
+    NODE_SET_PROTOTYPE_METHOD(tpl, "pushString",
+                              ProducerWrap::push<STRING_TYPE>);
+    NODE_SET_PROTOTYPE_METHOD(tpl, "pushBuffer",
+                              ProducerWrap::push<BUFFER_TYPE>);
 
-    NODE_SET_PROTOTYPE_METHOD(tpl, "pushString2Cache", ProducerWrap::push2Cache<STRING_TYPE>);
-    NODE_SET_PROTOTYPE_METHOD(tpl, "pushBuffer2Cache", ProducerWrap::push2Cache<BUFFER_TYPE>);
+    NODE_SET_PROTOTYPE_METHOD(tpl, "pushString2Cache",
+                              ProducerWrap::push2Cache<STRING_TYPE>);
+    NODE_SET_PROTOTYPE_METHOD(tpl, "pushBuffer2Cache",
+                              ProducerWrap::push2Cache<BUFFER_TYPE>);
 
     exports->Set(NanNew(className), tpl->GetFunction());
   }
@@ -69,19 +70,23 @@ class ProducerWrap : public ObjectWrap {
     NanUtf8String path(opt->Get(NanNew("path")));
     NanUtf8String topicName(opt->Get(NanNew("topic")));
 
-    TopicOpt topicOpt{ 1024 * 1024 * 1024, 8 };
+    TopicOpt topicOpt{1024 * 1024 * 1024, 8};
     Local<Value> chunkSize = opt->Get(NanNew("chunkSize"));
     Local<Value> chunksToKeep = opt->Get(NanNew("chunksToKeep"));
     Local<Value> bgFlush = opt->Get(NanNew("backgroundFlush"));
-    if (chunkSize->IsNumber()) topicOpt.chunkSize = size_t(chunkSize->NumberValue());
-    if (chunksToKeep->IsNumber()) topicOpt.chunksToKeep = size_t(chunksToKeep->NumberValue());
+    if (chunkSize->IsNumber())
+      topicOpt.chunkSize = size_t(chunkSize->NumberValue());
+    if (chunksToKeep->IsNumber())
+      topicOpt.chunksToKeep = size_t(chunksToKeep->NumberValue());
 
-    ProducerWrap* ptr = new ProducerWrap(*path, *topicName, &topicOpt, bgFlush->BooleanValue());
+    ProducerWrap* ptr =
+        new ProducerWrap(*path, *topicName, &topicOpt, bgFlush->BooleanValue());
     ptr->Wrap(args.This());
     NanReturnValue(args.This());
   }
 
-  template<DataType DT> static NAN_METHOD(push) {
+  template <DataType DT>
+  static NAN_METHOD(push) {
     NanScope();
 
     ProducerWrap* ptr = ObjectWrap::Unwrap<ProducerWrap>(args.This());
@@ -97,7 +102,8 @@ class ProducerWrap : public ObjectWrap {
     NanReturnUndefined();
   }
 
-  template<DataType DT> static NAN_METHOD(push2Cache) {
+  template <DataType DT>
+  static NAN_METHOD(push2Cache) {
     NanScope();
 
     ProducerWrap* ptr = ObjectWrap::Unwrap<ProducerWrap>(args.This());
@@ -114,23 +120,27 @@ class ProducerWrap : public ObjectWrap {
   }
 
  private:
-  ProducerWrap(const char* path, const char* name, TopicOpt* opt, bool bgFlush) : _handle(path, name, opt) {
+  ProducerWrap(const char* path, const char* name, TopicOpt* opt, bool bgFlush)
+      : _handle(path, name, opt) {
     if (bgFlush) _handle.enableBackgroundFlush(chrono::milliseconds(200));
   }
 
   Producer _handle;
 };
 
-template<DataType DT> class ReturnMaker {
+template <DataType DT>
+class ReturnMaker {
  public:
   Local<Value> static make(const Consumer::ItemType& item);
 };
 
-template<> Local<Value> ReturnMaker<STRING_TYPE>::make(const Consumer::ItemType& item) {
+template <>
+Local<Value> ReturnMaker<STRING_TYPE>::make(const Consumer::ItemType& item) {
   return NanNew(std::get<1>(item));
 }
 
-template<> Local<Value> ReturnMaker<BUFFER_TYPE>::make(const Consumer::ItemType& item) {
+template <>
+Local<Value> ReturnMaker<BUFFER_TYPE>::make(const Consumer::ItemType& item) {
   return NanNewBufferHandle(std::get<1>(item), std::get<2>(item));
 }
 
@@ -162,9 +172,10 @@ class ConsumerWrap : public ObjectWrap {
     NanUtf8String name(opt->Get(NanNew("name")));
     Local<Value> consumerId = opt->Get(NanNew("consumerId"));
 
-    TopicOpt topicOpt{ 1024 * 1024 * 1024, 0 };
+    TopicOpt topicOpt{1024 * 1024 * 1024, 0};
     Local<Value> chunkSize = opt->Get(NanNew("chunkSize"));
-    if (chunkSize->IsNumber()) topicOpt.chunkSize = size_t(chunkSize->NumberValue());
+    if (chunkSize->IsNumber())
+      topicOpt.chunkSize = size_t(chunkSize->NumberValue());
 
     size_t bs;
     Local<Value> batchSize = opt->Get(NanNew("batchSize"));
@@ -174,7 +185,8 @@ class ConsumerWrap : public ObjectWrap {
 
     size_t cid = size_t(consumerId->NumberValue());
 
-    ConsumerWrap* ptr = new ConsumerWrap(*path, *topicName, *name, cid, bs, &topicOpt);
+    ConsumerWrap* ptr =
+        new ConsumerWrap(*path, *topicName, *name, cid, bs, &topicOpt);
 
     if (bs > 0 && bs < 1024 * 1024) ptr->_batchSize = bs;
 
@@ -188,7 +200,8 @@ class ConsumerWrap : public ObjectWrap {
     ConsumerWrap* ptr = ObjectWrap::Unwrap<ConsumerWrap>(args.This());
 
     if (ptr->_cur <= ptr->_batch.size()) {
-      NanReturnValue(NanNew(double(std::get<0>(ptr->_batch.at(ptr->_cur - 1)))));
+      NanReturnValue(
+          NanNew(double(std::get<0>(ptr->_batch.at(ptr->_cur - 1)))));
     }
 
     NanReturnUndefined();
@@ -204,7 +217,8 @@ class ConsumerWrap : public ObjectWrap {
     NanReturnUndefined();
   }
 
-  template<DataType DT> static NAN_METHOD(pop) {
+  template <DataType DT>
+  static NAN_METHOD(pop) {
     NanScope();
 
     ConsumerWrap* ptr = ObjectWrap::Unwrap<ConsumerWrap>(args.This());
@@ -224,7 +238,11 @@ class ConsumerWrap : public ObjectWrap {
   }
 
  private:
-  ConsumerWrap(const char* path, const char* topicName, const char* name, TopicOpt* opt) : _handle(path, topicName, name, opt), _cur(0), _batchSize(128) { }
+  ConsumerWrap(const char* path, const char* topicName, const char* name,
+               size_t id, size_t batchSize, TopicOpt* opt)
+      : _handle(path, topicName, name, id, batchSize, opt),
+        _cur(0),
+        _batchSize(128) {}
 
   Consumer _handle;
   Consumer::BatchType _batch;
@@ -254,7 +272,7 @@ class TopicWrap : public ObjectWrap {
     NanUtf8String path(opt->Get(NanNew("path")));
     NanUtf8String topicName(opt->Get(NanNew("topic")));
 
-    TopicWrap *ptr = new TopicWrap(*path, *topicName);
+    TopicWrap* ptr = new TopicWrap(*path, *topicName);
 
     ptr->Wrap(args.This());
     NanReturnValue(args.This());
@@ -279,12 +297,11 @@ class TopicWrap : public ObjectWrap {
   }
 
  private:
-  TopicWrap(const char* path, const char* topicName) : _handle(EnvManager::getEnv(path)->getTopic(topicName)) {
-
-  }
+  TopicWrap(const char* path, const char* topicName)
+      : _handle(EnvManager::getEnv(path)->getTopic(topicName)) {}
 
  private:
-  Topic *_handle;
+  Topic* _handle;
 };
 
 void init(v8::Handle<v8::Object> exports) {
