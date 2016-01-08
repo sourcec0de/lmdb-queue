@@ -189,8 +189,6 @@ uint64_t Topic::getConsumerLastOffset(Txn& txn, const std::string& name,
   if (rc == 0) {
     if (*(uint64_t*)val.mv_data == 0) {
       *(uint64_t*)val.mv_data = id * batchSize;
-    } else if (*(uint64_t*)val.mv_data % batchSize == 0) {
-      *(uint64_t*)val.mv_data += 4 * batchSize;
     }
     return *(uint64_t*)val.mv_data;
   } else {
