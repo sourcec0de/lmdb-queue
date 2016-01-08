@@ -177,7 +177,7 @@ class ConsumerWrap : public ObjectWrap {
     if (chunkSize->IsNumber())
       topicOpt.chunkSize = size_t(chunkSize->NumberValue());
 
-    size_t bs;
+    size_t bs = 0;
     Local<Value> batchSize = opt->Get(NanNew("batchSize"));
     if (batchSize->IsNumber()) {
       bs = size_t(batchSize->NumberValue());

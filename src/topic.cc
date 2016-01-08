@@ -110,7 +110,7 @@ void Topic::setProducerHead(Txn& txn, uint64_t head) {
 }
 
 uint32_t Topic::getConsumerHeadFile(Txn& txn, const std::string& name,
-                                    size_t id, size_t bacthSize,
+                                    size_t id, size_t batchSize,
                                     uint32_t searchFrom) {
   // uint64_t head = getConsumerHead(txn, name);
   uint64_t head = getConsumerLastOffset(txn, name, id, batchSize);
