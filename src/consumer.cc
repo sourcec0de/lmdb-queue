@@ -53,7 +53,7 @@ void Consumer::pop(BatchType& result, size_t cnt) {
       for (; rc == 0 && cnt > 0; --cnt) {
         offset = _cursor->key<uint64_t>();
         if (offset % _batchSize == 0) {
-          offset += 4 * batchSize;
+          offset += 4 * _batchSize;
           break;
         }
         const char* data = (const char*)_cursor->val().mv_data;
