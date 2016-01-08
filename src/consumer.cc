@@ -43,7 +43,7 @@ void Consumer::pop(BatchType& result, size_t cnt) {
 
     uint64_t phead = _topic->getProducerHead(txn);
 
-    if ((_lastOffset - phead == 1) || phead == 0) return;
+    if ((_lastOffset - phead >= 1) || phead == 0) return;
 
     int rc = _cursor->gte(_lastOffset);
 
