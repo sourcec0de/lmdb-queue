@@ -135,6 +135,28 @@ uint32_t Topic::getConsumerHeadFile(Txn& txn, const std::string& name,
   return ret;
 }
 
+uint32_t Topic::getConsumerHeadFileByLastOffset(Txn& txn, uint64_t lastOffset,
+                                                uint32_t searchFrom) {
+  MDBCursor cur(_desc, txn.getEnvTxn());
+  int rc = cur.gte(searchFrom);
+  uint32_t ret = cur.key<uint32_t>();
+  uint64_t fh = cur.val<uint64_t>();
+  while (rc == 0 &&; lastOffset >= fh) {
+    rc = cur.next();
+    if (rc == 0) {
+      uint64_t ch = cur.val<uint64_t>();
+      if (lastOffset < ch) {
+        return ret;
+      } else {
+        ret = cur.key<uint32_t>();
+        fh = ch;
+      }
+    }
+  }
+
+  return ret;
+}
+
 uint64_t Topic::getConsumerHead(Txn& txn, const std::string& name) {
   char keyStr[4096];
   memset(keyStr, '\0', 4096);

@@ -84,7 +84,7 @@ void Consumer::updateOffset() {
 }
 
 void Consumer::openHead(Txn* txn) {
-  _current = _topic->getConsumerHeadFile(*txn, _name, _id, _batchSize, _current);
+  _current = _topic->getConsumerHeadFileByLastOffset(*txn, _lastOffset, _current);
 
   char path[4096];
   memset(path, '\0', 4096);
