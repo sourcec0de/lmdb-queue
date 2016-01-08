@@ -172,7 +172,7 @@ class ConsumerWrap : public ObjectWrap {
       bs = size_t(batchSize->NumberValue());
     }
 
-    size_t cid = size_t(id->NumberValue());
+    size_t cid = size_t(consumerId->NumberValue());
 
     ConsumerWrap* ptr = new ConsumerWrap(*path, *topicName, *name, cid, bs, &topicOpt);
 
