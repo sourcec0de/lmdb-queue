@@ -170,7 +170,7 @@ class ConsumerWrap : public ObjectWrap {
     NanUtf8String path(opt->Get(NanNew("path")));
     NanUtf8String topicName(opt->Get(NanNew("topic")));
     NanUtf8String name(opt->Get(NanNew("name")));
-    Local<Value> consumerId = opt->Get(NanNew("consumerId"));
+    Local<Value> consumerId = opt->Get(NanNew("id"));
 
     TopicOpt topicOpt{1024 * 1024 * 1024, 0};
     Local<Value> chunkSize = opt->Get(NanNew("chunkSize"));
@@ -184,6 +184,8 @@ class ConsumerWrap : public ObjectWrap {
     }
 
     size_t cid = size_t(consumerId->NumberValue());
+
+    std::cout << "cid: " << cid << std::endl;
 
     ConsumerWrap* ptr =
         new ConsumerWrap(*path, *topicName, *name, cid, bs, &topicOpt);

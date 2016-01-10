@@ -187,6 +187,7 @@ uint64_t Topic::getConsumerLastOffset(Txn& txn, const std::string& name,
   MDB_val key{strlen(keyStr), keyStr}, val{0, nullptr};
   int rc = mdb_get(txn.getEnvTxn(), _desc, &key, &val);  // 第一次是否返回0？
   if (rc == 0) {
+    std::cout << "in lastOffset: " << *(uint64_t*)val.mv_data << std::endl; 
     if (*(uint64_t*)val.mv_data == 0) {
       *(uint64_t*)val.mv_data = id * batchSize;
     }
@@ -195,9 +196,14 @@ uint64_t Topic::getConsumerLastOffset(Txn& txn, const std::string& name,
     if (rc != MDB_NOTFOUND)
       cout << "Consumer seek error: " << mdb_strerror(rc) << endl;
 
+    std::cout << "In lastOffset Seek error" << std::endl;
     MDBCursor cur(_desc, txn.getEnvTxn());
     cur.gte(uint32_t(0));
-    return cur.val<uint64_t>();
+    if (cur.val<uint64_t>() == 0) {
+      return id * batchSize;
+    } else {
+      return cur.val<uint64_t>(); 
+    }
   }
 }
 

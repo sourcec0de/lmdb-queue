@@ -29,6 +29,8 @@ Consumer::Consumer(const std::string& root, const std::string& topic,
   Txn txn(_topic->getEnv(), NULL);
   openHead(&txn);
   if (_lastOffset == 0) _lastOffset = _topic->getConsumerLastOffset(txn, _name, _id, _batchSize);
+  std::cout << "in ctor id: " << _id << std::endl;
+  std::cout << "in ctor _lastOffset: " << _lastOffset << std::endl;
   txn.commit();
       }
 
@@ -52,7 +54,8 @@ void Consumer::pop(BatchType& result, size_t cnt) {
 
       for (; rc == 0 && cnt > 0; --cnt) {
         offset = _cursor->key<uint64_t>();
-        if (offset % _batchSize == 0) {
+        std::cout << "id:" << _id << "offset: " << offset << " _lastOffset: " << _lastOffset << std::endl;
+        if ((offset % _batchSize == 0) && (offset != _lastOffset)) {
           offset += 4 * _batchSize;
           break;
         }
@@ -64,6 +67,8 @@ void Consumer::pop(BatchType& result, size_t cnt) {
 
       if (offset > 0) {
         _lastOffset = offset;
+        std::cout << "id: " << _id << std::endl;
+        std::cout << "_lastOffset: " << _lastOffset << std::endl;
       }
     } else {
       if (rc != MDB_NOTFOUND)
@@ -83,6 +88,7 @@ void Consumer::pop(BatchType& result, size_t cnt) {
 
 void Consumer::updateOffset() {
   Txn txn(_topic->getEnv(), NULL);
+  std::cout << "updateOffset" << std::endl;
   _topic->setConsumerHead(txn, _name, _lastOffset + 1);
   txn.commit();
 }
