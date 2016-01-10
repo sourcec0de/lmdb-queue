@@ -66,7 +66,7 @@ void Consumer::pop(BatchType& result, size_t cnt) {
       }
 
       if (offset > 0) {
-        _lastOffset = offset;
+        _lastOffset = offset + 1;
         std::cout << "id: " << _id << std::endl;
         std::cout << "_lastOffset: " << _lastOffset << std::endl;
       }
@@ -89,7 +89,7 @@ void Consumer::pop(BatchType& result, size_t cnt) {
 void Consumer::updateOffset() {
   Txn txn(_topic->getEnv(), NULL);
   std::cout << "updateOffset" << std::endl;
-  _topic->setConsumerHead(txn, _name, _lastOffset + 1);
+  _topic->setConsumerHead(txn, _name, _lastOffset);
   txn.commit();
 }
 
