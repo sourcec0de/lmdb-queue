@@ -63,7 +63,7 @@ void Consumer::pop(BatchType& result, size_t cnt) {
       }
 
       if (offset > 0) {
-        _lastOffset = offset;
+        _lastOffset = offset + 1;
       }
     } else {
       if (rc != MDB_NOTFOUND)
@@ -83,7 +83,7 @@ void Consumer::pop(BatchType& result, size_t cnt) {
 
 void Consumer::updateOffset() {
   Txn txn(_topic->getEnv(), NULL);
-  _topic->setConsumerHead(txn, _name, _lastOffset + 1);
+  _topic->setConsumerHead(txn, _name, _lastOffset);
   txn.commit();
 }
 
