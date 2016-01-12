@@ -6,14 +6,15 @@
 using namespace std;
 
 Consumer::Consumer(const std::string& root, const std::string& topic,
-                   const std::string& name, size_t id, size_t batchSize,
-                   TopicOpt* opt)
+                   const std::string& name, size_t id, size_t idCount,
+                   size_t batchSize, TopicOpt* opt)
     : _topic(EnvManager::getEnv(root)->getTopic(topic)),
       _name(name),
       _id(id),
+      _idCount(idCount),
       _batchSize(batchSize),
       _current(0),
-      _lastOffset(0),
+      _nextOffset(0),
       _env(nullptr),
       _db(0),
       _rtxn(nullptr),
@@ -28,8 +29,8 @@ Consumer::Consumer(const std::string& root, const std::string& topic,
 
   Txn txn(_topic->getEnv(), NULL);
   openHead(&txn);
-  if (_lastOffset == 0) {
-    _lastOffset = _topic->getConsumerLastOffset(txn, _name, _id, _batchSize);
+  if (_nextOffset == 0) {
+    _nextOffset = _topic->getConsumerNextOffset(txn, _name, _id, _idCount, _batchSize);
   }
 
   txn.commit();
@@ -46,33 +47,33 @@ void Consumer::pop(BatchType& result, size_t cnt) {
 
     uint64_t phead = _topic->getProducerHead(txn);
 
-    if ((_lastOffset >= phead) || phead == 0) return;
+    if ((_nextOffset >= phead + 1) || phead == 0) return;
 
-    int rc = _cursor->gte(_lastOffset);
+    int rc = _cursor->gte(_nextOffset);
 
     if (rc == 0) {
       uint64_t offset = 0;
 
       for (; rc == 0 && cnt > 0; --cnt) {
         offset = _cursor->key<uint64_t>();
-        if (offset % _batchSize == 0) {
-          offset += 4 * _batchSize;
-          break;
-        }
         const char* data = (const char*)_cursor->val().mv_data;
         size_t len = _cursor->val().mv_size;
         result.push_back(ItemType(offset, data, len));
         rc = _cursor->next();
+        if (offset % _batchSize == 0) {
+          offset += (_idCount - 1) * _batchSize;
+          break;
+        }
       }
 
       if (offset > 0) {
-        _lastOffset = offset;
+        _nextOffset = offset + 1;
       }
     } else {
       if (rc != MDB_NOTFOUND)
         cout << "Consumer seek error: " << mdb_strerror(rc) << endl;
 
-      if (_lastOffset <= _topic->getProducerHead(txn)) {
+      if (_nextOffset <= _topic->getProducerHead(txn)) {
         shouldRotate = true;
       }
     }
@@ -86,12 +87,13 @@ void Consumer::pop(BatchType& result, size_t cnt) {
 
 void Consumer::updateOffset() {
   Txn txn(_topic->getEnv(), NULL);
-  _topic->setConsumerHead(txn, _name, _lastOffset + 1);
+  _topic->setConsumerHead(txn, _name, _nextOffset);
   txn.commit();
 }
 
 void Consumer::openHead(Txn* txn) {
-  _current = _topic->getConsumerHeadFileByLastOffset(*txn, _lastOffset, _current);
+  _current =
+      _topic->getConsumerHeadFileByNextOffset(*txn, _nextOffset, _current);
 
   char path[4096];
   memset(path, '\0', 4096);

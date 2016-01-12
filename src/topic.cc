@@ -135,17 +135,17 @@ uint32_t Topic::getConsumerHeadFile(Txn& txn, const std::string& name,
   return ret;
 }
 
-uint32_t Topic::getConsumerHeadFileByLastOffset(Txn& txn, uint64_t lastOffset,
+uint32_t Topic::getConsumerHeadFileByNextOffset(Txn& txn, uint64_t nextOffset,
                                                 uint32_t searchFrom) {
   MDBCursor cur(_desc, txn.getEnvTxn());
   int rc = cur.gte(searchFrom);
   uint32_t ret = cur.key<uint32_t>();
   uint64_t fh = cur.val<uint64_t>();
-  while (rc == 0 && lastOffset >= fh) {
+  while (rc == 0 && nextOffset >= fh) {
     rc = cur.next();
     if (rc == 0) {
       uint64_t ch = cur.val<uint64_t>();
-      if (lastOffset < ch) {
+      if (nextOffset < ch) {
         return ret;
       } else {
         ret = cur.key<uint32_t>();
@@ -188,7 +188,7 @@ uint64_t Topic::getConsumerLastOffset(Txn& txn, const std::string& name,
   int rc = mdb_get(txn.getEnvTxn(), _desc, &key, &val);  // 第一次是否返回0？
   if (rc == 0) {
     if (*(uint64_t*)val.mv_data == 0) {
-      *(uint64_t*)val.mv_data = id * batchSize;
+      *(uint64_t*)val.mv_data = id * batchSize + 1;
     }
     return *(uint64_t*)val.mv_data;
   } else {
@@ -197,6 +197,11 @@ uint64_t Topic::getConsumerLastOffset(Txn& txn, const std::string& name,
 
     MDBCursor cur(_desc, txn.getEnvTxn());
     cur.gte(uint32_t(0));
+    if (cur.val<uint64_t>() == 0) {
+      return id * batchSize + 1;
+    } else {
+      return cur.val<uint64_t>();
+    }
     return cur.val<uint64_t>();
   }
 }

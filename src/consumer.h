@@ -14,7 +14,8 @@ class Consumer {
 
  public:
   Consumer(const std::string& root, const std::string& topic,
-           const std::string& name, size_t id, size_t batchSize, TopicOpt* opt);
+           const std::string& name, size_t id, size_t idCount, size_t batchSize,
+           TopicOpt* opt);
   ~Consumer();
 
  private:
@@ -35,10 +36,11 @@ class Consumer {
   Topic* _topic;
   std::string _name;
   size_t _id;
+  size_t _idCount;
   size_t _batchSize;
 
   uint32_t _current;
-  uint64_t _lastOffset;
+  uint64_t _nextOffset;
   MDB_env* _env;
   MDB_dbi _db;
   MDB_txn* _rtxn;

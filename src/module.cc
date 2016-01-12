@@ -170,7 +170,6 @@ class ConsumerWrap : public ObjectWrap {
     NanUtf8String path(opt->Get(NanNew("path")));
     NanUtf8String topicName(opt->Get(NanNew("topic")));
     NanUtf8String name(opt->Get(NanNew("name")));
-    Local<Value> consumerId = opt->Get(NanNew("consumerId"));
 
     TopicOpt topicOpt{1024 * 1024 * 1024, 0};
     Local<Value> chunkSize = opt->Get(NanNew("chunkSize"));
@@ -183,10 +182,20 @@ class ConsumerWrap : public ObjectWrap {
       bs = size_t(batchSize->NumberValue());
     }
 
-    size_t cid = size_t(consumerId->NumberValue());
+    size_t _id = 0;
+    Local<Value> id = opt->Get(NanNew("id"));
+    if (id->IsNumber()) {
+      _id = size_t(id->NumberValue());
+    }
 
-    ConsumerWrap* ptr =
-        new ConsumerWrap(*path, *topicName, *name, cid, bs, &topicOpt);
+    size_t _idCount = 0;
+    Local<Value> idCount = opt->Get(NanNew("idCount"));
+    if (idCount->IsNumber()) {
+      _idCount = size_t(idCount->NumberValue());
+    }
+
+    ConsumerWrap* ptr = new ConsumerWrap(*path, *topicName, *name, _id,
+                                         _idCount, bs, &topicOpt);
 
     if (bs > 0 && bs < 1024 * 1024) ptr->_batchSize = bs;
 
@@ -239,7 +248,7 @@ class ConsumerWrap : public ObjectWrap {
 
  private:
   ConsumerWrap(const char* path, const char* topicName, const char* name,
-               size_t id, size_t batchSize, TopicOpt* opt)
+               size_t id, size_t idCount, size_t batchSize, TopicOpt* opt)
       : _handle(path, topicName, name, id, batchSize, opt),
         _cur(0),
         _batchSize(128) {}

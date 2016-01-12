@@ -25,9 +25,9 @@ class Topic {
 
   uint32_t getConsumerHeadFile(Txn& txn, const std::string& name, size_t id,
                                size_t batchSize, uint32_t searchFrom);
-  uint32_t getConsumerHeadFileByLastOffset(Txn& txn, uint64_t lastOffset,
+  uint32_t getConsumerHeadFileByNextOffset(Txn& txn, uint64_t lastOffset,
                                            uint32_t searchFrom);
-  uint64_t getConsumerLastOffset(Txn& txn, const std::string& name, size_t id,
+  uint64_t getConsumerNextOffset(Txn& txn, const std::string& name, size_t id,
                                  size_t batchSize);
   uint64_t getConsumerHead(Txn& txn, const std::string& name);
   void setConsumerHead(Txn& txn, const std::string& name, uint64_t head);
