@@ -30,7 +30,7 @@ Consumer::Consumer(const std::string& root, const std::string& topic,
   Txn txn(_topic->getEnv(), NULL);
   openHead(&txn);
   if (_nextOffset == 0) {
-    _nextOffset = _topic->getConsumerNextOffset(txn, _name, _id, _idCount, _batchSize);
+    _nextOffset = _topic->getConsumerNextOffset(txn, _name, _id, _batchSize);
   }
 
   txn.commit();
