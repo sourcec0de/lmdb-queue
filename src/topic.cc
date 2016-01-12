@@ -113,7 +113,7 @@ uint32_t Topic::getConsumerHeadFile(Txn& txn, const std::string& name,
                                     size_t id, size_t batchSize,
                                     uint32_t searchFrom) {
   // uint64_t head = getConsumerHead(txn, name);
-  uint64_t head = getConsumerLastOffset(txn, name, id, batchSize);
+  uint64_t head = getConsumerNextOffset(txn, name, id, batchSize);
 
   MDBCursor cur(_desc, txn.getEnvTxn());
   int rc = cur.gte(searchFrom);
@@ -177,7 +177,7 @@ uint64_t Topic::getConsumerHead(Txn& txn, const std::string& name) {
   }
 }
 
-uint64_t Topic::getConsumerLastOffset(Txn& txn, const std::string& name,
+uint64_t Topic::getConsumerNextOffset(Txn& txn, const std::string& name,
                                       size_t id, size_t batchSize) {
   char keyStr[4096];
   memset(keyStr, '\0', 4096);

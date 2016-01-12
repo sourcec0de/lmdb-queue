@@ -176,23 +176,14 @@ class ConsumerWrap : public ObjectWrap {
     if (chunkSize->IsNumber())
       topicOpt.chunkSize = size_t(chunkSize->NumberValue());
 
-    size_t bs = 0;
     Local<Value> batchSize = opt->Get(NanNew("batchSize"));
-    if (batchSize->IsNumber()) {
-      bs = size_t(batchSize->NumberValue());
-    }
+    size_t bs = size_t(batchSize->NumberValue());
 
-    size_t _id = 0;
     Local<Value> id = opt->Get(NanNew("id"));
-    if (id->IsNumber()) {
-      _id = size_t(id->NumberValue());
-    }
+    size_t _id = size_t(id->NumberValue());
 
-    size_t _idCount = 0;
     Local<Value> idCount = opt->Get(NanNew("idCount"));
-    if (idCount->IsNumber()) {
-      _idCount = size_t(idCount->NumberValue());
-    }
+    size_t _idCount = size_t(idCount->NumberValue());
 
     ConsumerWrap* ptr = new ConsumerWrap(*path, *topicName, *name, _id,
                                          _idCount, bs, &topicOpt);
@@ -249,7 +240,7 @@ class ConsumerWrap : public ObjectWrap {
  private:
   ConsumerWrap(const char* path, const char* topicName, const char* name,
                size_t id, size_t idCount, size_t batchSize, TopicOpt* opt)
-      : _handle(path, topicName, name, id, batchSize, opt),
+      : _handle(path, topicName, name, id, idCount, batchSize, opt),
         _cur(0),
         _batchSize(128) {}
 
