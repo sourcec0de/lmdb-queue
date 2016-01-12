@@ -35,8 +35,6 @@ Consumer::Consumer(const std::string& root, const std::string& topic,
     _lastOffset = _topic->getConsumerLastOffset(txn, _name, _id, _batchSize);
   }
 
-  _nextOffset = _lastOffset + 1;
-
   txn.commit();
       }
 
@@ -51,44 +49,55 @@ void Consumer::pop(BatchType& result, size_t cnt) {
 
     uint64_t phead = _topic->getProducerHead(txn);
 
-    if ((_lastOffset >= phead + 1) || phead == 0) return;
+    if ((_lastOffset >= phead) || phead == 0) return;
 
     int rc = _cursor->gte(_lastOffset);
 
+    if (_id == 3 && _lastOffset >= 4697473)
+        std::cout << "id:" << _id << " rc: " << rc << std::endl;
     if (rc == 0) {
       uint64_t offset = 0;
 
       for (; rc == 0 && cnt > 0; --cnt) {
         offset = _cursor->key<uint64_t>();
-        std::cout << "id:" << _id << "offset: " << offset << " _lastOffset: " << _lastOffset << std::endl;
-        if ((offset % _batchSize == 0) && (offset != _lastOffset)) {
-          offset += 4 * _batchSize;
-          break;
-        }
         const char* data = (const char*)_cursor->val().mv_data;
         size_t len = _cursor->val().mv_size;
         result.push_back(ItemType(offset, data, len));
         rc = _cursor->next();
+        if (_id == 3 && offset >= 4697473) {
+          if (rc == -30798) {
+              std::cout << "haha, current: " << _current << std::endl;
+          }
+          std::cout << "id:" << _id << "offset: " << offset << " _Offset: " << _lastOffset << " rc: " << rc << std::endl;
+        }
+
+        if ((offset % _batchSize == 0) && (offset != _lastOffset)) {
+          offset += 3 * _batchSize;
+          break;
+        }
       }
 
       if (offset > 0) {
         _lastOffset = offset + 1;
         std::cout << "id: " << _id << std::endl;
         std::cout << "_lastOffset: " << _lastOffset << std::endl;
-        _lastOffset = offset;
-        _nextOffset = _lastOffset + 1;
       }
     } else {
       if (rc != MDB_NOTFOUND)
         cout << "Consumer seek error: " << mdb_strerror(rc) << endl;
 
       if (_lastOffset <= _topic->getProducerHead(txn)) {
+        if (_id == 3 && _lastOffset >= 4697473)
+          std::cout << "set Rotate flag" << std::endl;
         shouldRotate = true;
       }
     }
   }
 
   if (shouldRotate) {
+    if (_id == 3 && _lastOffset >= 4697473)
+      std::cout << "begin Rotate" << std::endl;
+
     rotate();
     pop(result, cnt);
   }
@@ -97,12 +106,16 @@ void Consumer::pop(BatchType& result, size_t cnt) {
 void Consumer::updateOffset() {
   Txn txn(_topic->getEnv(), NULL);
   std::cout << "updateOffset" << std::endl;
-  _topic->setConsumerHead(txn, _name, _nextOffset);
+  _topic->setConsumerHead(txn, _name, _lastOffset);
   txn.commit();
 }
 
 void Consumer::openHead(Txn* txn) {
   _current = _topic->getConsumerHeadFileByLastOffset(*txn, _lastOffset, _current);
+
+  if (_id == 3) {
+    std::cout << "_current: " << _current << std::endl;
+  }
 
   char path[4096];
   memset(path, '\0', 4096);

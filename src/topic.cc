@@ -141,10 +141,14 @@ uint32_t Topic::getConsumerHeadFileByLastOffset(Txn& txn, uint64_t lastOffset,
   int rc = cur.gte(searchFrom);
   uint32_t ret = cur.key<uint32_t>();
   uint64_t fh = cur.val<uint64_t>();
+  std::cout << "lastOffset: " << lastOffset << std::endl;
+  std::cout << "fh: " << fh << std::endl;
+
   while (rc == 0 && lastOffset >= fh) {
     rc = cur.next();
     if (rc == 0) {
       uint64_t ch = cur.val<uint64_t>();
+      std::cout << "ch: " << ch << std::endl;
       if (lastOffset < ch) {
         return ret;
       } else {
@@ -189,7 +193,7 @@ uint64_t Topic::getConsumerLastOffset(Txn& txn, const std::string& name,
   if (rc == 0) {
     std::cout << "in lastOffset: " << *(uint64_t*)val.mv_data << std::endl; 
     if (*(uint64_t*)val.mv_data == 0) {
-      *(uint64_t*)val.mv_data = id * batchSize;
+      *(uint64_t*)val.mv_data = id * batchSize + 1;
     }
     return *(uint64_t*)val.mv_data;
   } else {
@@ -200,7 +204,7 @@ uint64_t Topic::getConsumerLastOffset(Txn& txn, const std::string& name,
     MDBCursor cur(_desc, txn.getEnvTxn());
     cur.gte(uint32_t(0));
     if (cur.val<uint64_t>() == 0) {
-      return id * batchSize;
+      return id * batchSize + 1;
     } else {
       return cur.val<uint64_t>(); 
     }
