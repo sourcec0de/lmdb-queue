@@ -108,7 +108,7 @@ private:
 
     ProducerWrap* ptr = new ProducerWrap(*path, *topicName, &topicOpt, bgFlush->BooleanValue());
     ptr->Wrap(info.This());
-    info.GetReturnValue().Set(info.This());
+    return info.GetReturnValue().Set(info.This());
   }
 
   template<DataType DT> static NAN_METHOD(push) {
@@ -124,7 +124,7 @@ private:
 
     ptr->_handle.push(batch.get());
 
-    info.GetReturnValue().Set(Null());
+    return info.GetReturnValue().Set(Null());
   }
 
   template<DataType DT> static NAN_METHOD(push2Cache) {
@@ -140,7 +140,7 @@ private:
 
     ptr->_handle.push2Cache(batch.get());
 
-    info.GetReturnValue().Set(Null());
+    return info.GetReturnValue().Set(Null());
   }
 
 private:
@@ -202,7 +202,7 @@ private:
     }
 
     ptr->Wrap(info.This());
-    info.GetReturnValue().Set(info.This());
+    return info.GetReturnValue().Set(info.This());
   }
 
   static NAN_METHOD(offset) {
@@ -211,10 +211,10 @@ private:
     ConsumerWrap* ptr = ObjectWrap::Unwrap<ConsumerWrap>(info.This());
 
     if (ptr->_cur <= ptr->_batch.size()) {
-      info.GetReturnValue().Set((New(double(std::get<0>(ptr->_batch.at(ptr->_cur - 1))))));
+      return info.GetReturnValue().Set((New(double(std::get<0>(ptr->_batch.at(ptr->_cur - 1))))));
     }
 
-    info.GetReturnValue().Set(Null());
+    return info.GetReturnValue().Set(Null());
   }
 
   template<DataType DT> static NAN_METHOD(pop) {
@@ -223,17 +223,17 @@ private:
     ConsumerWrap* ptr = ObjectWrap::Unwrap<ConsumerWrap>(info.This());
 
     if (ptr->_cur < ptr->_batch.size()) {
-      info.GetReturnValue().Set(ReturnMaker<DT>::make(ptr->_batch.at(ptr->_cur++)));
+      return info.GetReturnValue().Set(ReturnMaker<DT>::make(ptr->_batch.at(ptr->_cur++)));
     }
 
     ptr->_batch.clear();
     ptr->_cur = 1;
     ptr->_handle.pop(ptr->_batch, ptr->_batchSize);
     if (ptr->_batch.size() > 0) {
-      info.GetReturnValue().Set(ReturnMaker<DT>::make(ptr->_batch.at(0)));
+      return info.GetReturnValue().Set(ReturnMaker<DT>::make(ptr->_batch.at(0)));
     }
 
-    info.GetReturnValue().Set(Null());
+    return info.GetReturnValue().Set(Null());
   }
 
 private:
@@ -270,7 +270,7 @@ private:
     TopicWrap *ptr = new TopicWrap(*path, *topicName);
 
     ptr->Wrap(info.This());
-    info.GetReturnValue().Set(Null());
+    return info.GetReturnValue().Set(Null());
   }
 
   static NAN_METHOD(status) {
@@ -288,7 +288,7 @@ private:
     }
     ret->Set(New("consumerHeads").ToLocalChecked(), consumerHeads);
 
-    info.GetReturnValue().Set(ret);
+    return info.GetReturnValue().Set(ret);
   }
 
 private:
