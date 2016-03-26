@@ -160,8 +160,9 @@ template<> Local<Value> ReturnMaker<STRING_TYPE>::make(const Consumer::ItemType&
   return New(std::get<1>(item)).ToLocalChecked();
 }
 
+void FreeCallback(char *data, void *hint) {};
 template<> Local<Value> ReturnMaker<BUFFER_TYPE>::make(const Consumer::ItemType& item) {
-  return NewBuffer((char*)std::get<1>(item), std::get<2>(item)).ToLocalChecked();
+  return NewBuffer((char*)std::get<1>(item), std::get<2>(item), FreeCallback, nullptr).ToLocalChecked();
 }
 
 class ConsumerWrap : public ObjectWrap {
