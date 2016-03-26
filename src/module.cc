@@ -162,7 +162,7 @@ template<> Local<Value> ReturnMaker<STRING_TYPE>::make(const Consumer::ItemType&
 
 void FreeCallback(char *data, void *hint) {};
 template<> Local<Value> ReturnMaker<BUFFER_TYPE>::make(const Consumer::ItemType& item) {
-  return NewBuffer((char*)std::get<1>(item), std::get<2>(item), FreeCallback, nullptr).ToLocalChecked();
+  return CopyBuffer((char*)std::get<1>(item), std::get<2>(item)).ToLocalChecked();
 }
 
 class ConsumerWrap : public ObjectWrap {
