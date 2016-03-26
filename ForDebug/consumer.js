@@ -3,10 +3,13 @@
 var LmdbQueue = require('../'),
     Consumer = LmdbQueue.Consumer;
 
-var consumer = new Consumer({ path: __dirname + '/test-data', topic: 'test', name: 'test', dataType: LmdbQueue.STRING_TYPE, chunkSize: 64 * 1024 * 1024, batchSize: 1024 * 16 }),
-    start = Date.now();
+var consumer = new Consumer({ path: __dirname + '/test-data', topic: 'test', name: 'test2', dataType: LmdbQueue.BUFFER_TYPE, chunkSize: 64 * 1024 * 1024, batchSize: 16 });
 
-while(1) {
+setInterval(function() {
+  var message=[];
   var buf = consumer.pop();
-  console.log(buf.length);
-}
+  var dup = new Buffer(buf.length);
+  buf.copy(dup);
+  message.push(buf);
+  message.push(dup);
+},100);
