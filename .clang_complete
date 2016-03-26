@@ -1,0 +1,6 @@
+-I/Users/zwb/.node-gyp/4.3.0/include/node
+-I/Users/zwb/.node-gyp/4.3.0/src
+-I/Users/zwb/.node-gyp/4.3.0/deps/uv/include
+-I/Users/zwb/.node-gyp/4.3.0/deps/v8/include
+-I./node_modules/nan
+-I./deps/udt/udt4/src
